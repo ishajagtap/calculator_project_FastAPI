@@ -1,4 +1,4 @@
-# FastAPI Calculator — Midterm Project
+# FastAPI Calculator
 
 A full-stack calculator application built with **FastAPI** and tested with unit, integration, and end-to-end (Playwright) tests. Includes structured logging and a GitHub Actions CI pipeline.
 
