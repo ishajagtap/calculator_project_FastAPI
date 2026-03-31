@@ -1,0 +1,48 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+data/logs/
+
+# Data / history
+data/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude
+.claude/
+.claude.json
+
+# Playwright
+playwright-report/
+test-results/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FastAPI Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+      min-height: 100vh;
+    }
+    .container { width: 100%; max-width: 640px; }
+    h1 { text-align: center; color: #1a1a2e; margin-bottom: 28px; font-size: 2rem; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    label { display: block; font-weight: 600; color: #333; margin-bottom: 6px; }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    select:focus, input:focus { outline: none; border-color: #4361ee; }
+    .row { display: flex; gap: 16px; }
+    .row > div { flex: 1; }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4361ee;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #3651d4; }
+    #result-box {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: none;
+    }
+    #result-box.success { background: #e6f4ea; color: #1e7e34; border: 1px solid #b7dfbf; }
+    #result-box.error   { background: #fdecea; color: #c62828; border: 1px solid #f5c6cb; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: #4361ee; color: #fff; padding: 10px; text-align: left; }
+    td { padding: 9px 10px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) td { background: #f8f9ff; }
+    .history-title { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; }
+    #no-history { color: #888; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>FastAPI Calculator</h1>
+
+  <!-- Calculator Card -->
+  <div class="card">
+    <form id="calc-form">
+      <label for="operation">Operation</label>
+      <select id="operation" name="operation">
+        <option value="add">Add  (a + b)</option>
+        <option value="sub">Subtract  (a − b)</option>
+        <option value="mul">Multiply  (a × b)</option>
+        <option value="div">Divide  (a ÷ b)</option>
+        <option value="pow">Power  (a ^ b)</option>
+        <option value="root">Root  (b-th root of a)</option>
+        <option value="mod">Modulus  (a % b)</option>
+        <option value="int_divide">Integer Divide  (a // b)</option>
+        <option value="percent">Percent  ((a/b)×100)</option>
+        <option value="abs_diff">Absolute Difference  |a − b|</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label for="a">Operand A</label>
+          <input id="a" name="a" type="number" step="any" placeholder="e.g. 10" required />
+        </div>
+        <div>
+          <label for="b">Operand B</label>
+          <input id="b" name="b" type="number" step="any" placeholder="e.g. 5" required />
+        </div>
+      </div>
+
+      <button id="calculate-btn" type="submit">Calculate</button>
+    </form>
+
+    <div id="result-box">
+      <span id="result"></span>
+    </div>
+  </div>
+
+  <!-- History Card -->
+  <div class="card">
+    <p class="history-title">Calculation History</p>
+    <div id="history-container">
+      <p id="no-history">No calculations yet.</p>
+      <table id="history-table" style="display:none;">
+        <thead>
+          <tr><th>#</th><th>Operation</th><th>A</th><th>B</th><th>Result</th></tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form       = document.getElementById('calc-form');
+  const resultBox  = document.getElementById('result-box');
+  const resultSpan = document.getElementById('result');
+  const noHistory  = document.getElementById('no-history');
+  const histTable  = document.getElementById('history-table');
+  const histBody   = document.getElementById('history-body');
+  let rowCount = 0;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+
+    try {
+      const resp = await fetch('/calculate', { method: 'POST', body: data });
+      const json = await resp.json();
+
+      resultBox.style.display = 'block';
+      if (json.error) {
+        resultBox.className = 'error';
+        resultSpan.textContent = 'Error: ' + json.error;
+      } else {
+        resultBox.className = 'success';
+        resultSpan.textContent =
+          json.a + ' ' + json.operation + ' ' + json.b + ' = ' + json.result;
+        addHistoryRow(json);
+      }
+    } catch (err) {
+      resultBox.style.display = 'block';
+      resultBox.className = 'error';
+      resultSpan.textContent = 'Network error: ' + err.message;
+    }
+  });
+
+  function addHistoryRow(entry) {
+    noHistory.style.display = 'none';
+    histTable.style.display = 'table';
+    rowCount++;
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + rowCount + '</td>' +
+      '<td>' + entry.operation + '</td>' +
+      '<td>' + entry.a + '</td>' +
+      '<td>' + entry.b + '</td>' +
+      '<td>' + entry.result + '</td>';
+    histBody.appendChild(tr);
+  }
+</script>
+</body>
+</html>
